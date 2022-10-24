@@ -8,6 +8,7 @@ import torch
 import torchvision
 from torchvision import transforms, utils
 import matplotlib.pyplot as plt
+from torch import nn
 
 
 def show_batch(imgs):
@@ -45,7 +46,20 @@ def trya():
     plt.scatter(x.data.numpy(), y.data.numpy())
     plt.show()
 
-            
+
+class Tudui(nn.Module):
+    def __init__(self):
+        super().__init__()
         
+    def forward(self,input):
+        ourput = input + 1
+        return ourput
+          
+
+tudui = Tudui()
+x = torch.tensor(1.0)
+ourput = tudui(x)
+print(ourput)
+
         
 if __name__ =="__main__": trya()
