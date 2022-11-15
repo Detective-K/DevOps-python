@@ -109,4 +109,14 @@ for i in range(len(train_sentences)):
 for i in range(len(test_sentences)):
     if 'www.' in test_sentences[i] or 'http:' in test_sentences[i] or 'https:' in test_sentences[i] or '.com' in test_sentences[i]:
         test_sentences[i] = re.sub(r"([^ ]+(?<=\.[a-z]{3}))", "<url>", test_sentences[i])
+        
+words = Counter() # 用于统计每个单词出现的次数
+for i, sentence in enumerate(train_sentences):
+    words_list = nltk.word_tokenize(sentence) # 将句子进行分词
+    words.update(words_list)  # 更新词频列表
+    train_sentences[i] = words_list # 分词后的单词列表存在该列表中
+    
+    if i%200000 == 0: # 没20w打印一次进度
+        print(str((i*100)/num_train) + "% done")
+print("100% done")
 
