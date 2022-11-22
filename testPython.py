@@ -120,3 +120,7 @@ for i, sentence in enumerate(train_sentences):
         print(str((i*100)/num_train) + "% done")
 print("100% done")
 
+words = {k:v for k,v in words.items() if v>1}
+words = sorted(words, key=words.get,reverse=True)
+print(words[:10]) # 打印一下出现次数最多的10个单词
+
