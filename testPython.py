@@ -124,3 +124,31 @@ words = {k:v for k,v in words.items() if v>1}
 words = sorted(words, key=words.get,reverse=True)
 print(words[:10]) # 打印一下出现次数最多的10个单词
 
+words = ['_PAD'] + words
+word2idx = {o:i for i,o in enumerate(words)}
+idx2word = {i:o for i,o in enumerate(words)}
+
+for i, sentence in enumerate(train_sentences):    
+    train_sentences[i] = [word2idx[word] if word in word2idx else 0 for word in sentence]
+
+for i, sentence in enumerate(test_sentences):
+    test_sentences[i] = [word2idx[word.lower()] if word.lower() in word2idx else 0 for word in nltk.word_tokenize(sentence)]
+
+def pad_input(sentences, seq_len):
+    """
+    将句子长度固定为`seq_len`，超出长度的从后面阶段，长度不足的在前面补0
+    """
+    features = np.zeros((len(sentences), seq_len),dtype=int)
+    for ii, review in enumerate(sentences):
+        if len(review) != 0:
+            features[ii, -len(review):] = np.array(review)[:seq_len]
+    return features
+
+# 固定测试数据集和训练数据集的句子长度
+train_sentences = pad_input(train_sentences, 200)
+test_sentences = pad_input(test_sentences, 200)
+
+train_labels = np.array(train_labels)
+test_labels = np.array(test_labels)
+
+#--------------------------------------以上為數據前處理
