@@ -252,3 +252,102 @@ class SentimentNet(nn.Module):
                   torch.zeros(self.n_layers, batch_size, self.hidden_dim).to(device)
                  )
         return hidden
+    
+model = SentimentNet(len(words))
+model.to(device)
+
+
+criterion = nn.BCELoss()
+
+lr = 0.005
+optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+
+epochs = 2 # 一共训练两轮
+counter = 0 # 用于记录训练次数
+print_every = 1000 # 每1000次打印一下当前状态
+
+for i in range(epochs):
+    h = model.init_hidden(batch_size) # 初始化第一个Hidden_state
+    
+    for inputs, labels in train_loader: # 从train_loader中获取一组inputs和labels
+        counter += 1 # 训练次数+1
+        
+        # 将上次输出的hidden_state转为tuple格式
+        # 因为有两次，所以len(h)==2
+        h = tuple([e.data for e in h]) 
+        
+        # 将数据迁移到GPU
+        inputs, labels = inputs.to(device), labels.to(device)
+        
+        # 清空模型梯度
+        model.zero_grad()
+        
+        # 将本轮的输入和hidden_state送给模型，进行前向传播，
+        # 然后获取本次的输出和新的hidden_state
+        output, h = model(inputs, h)
+        
+        # 将预测值和真实值送给损失函数计算损失
+        loss = criterion(output, labels.float())
+        
+        # 进行反向传播
+        loss.backward()
+        
+        # 对模型进行裁剪，防止模型梯度爆炸
+        # 详情请参考：javascript:void(0)
+        nn.utils.clip_grad_norm_(model.parameters(), max_norm=5)
+        
+        # 更新权重
+        optimizer.step()
+        
+        # 隔一定次数打印一下当前状态
+        if counter%print_every == 0:
+            print("Epoch: {}/{}...".format(i+1, epochs),
+                  "Step: {}...".format(counter),
+                  "Loss: {:.6f}...".format(loss.item()))
+
+#-----------------------------評估模型性能
+test_losses = [] # 记录测试数据集的损失
+num_correct = 0 # 记录正确预测的数量
+h = model.init_hidden(batch_size) # 初始化hidden_state和cell_state
+model.eval() # 将模型调整为评估模式
+
+# 开始评估模型
+for inputs, labels in test_loader:
+    h = tuple([each.data for each in h])
+    inputs, labels = inputs.to(device), labels.to(device)
+    output, h = model(inputs, h)
+    test_loss = criterion(output.squeeze(), labels.float())
+    test_losses.append(test_loss.item())
+    pred = torch.round(output.squeeze()) # 将模型四舍五入为0和1
+    correct_tensor = pred.eq(labels.float().view_as(pred)) # 计算预测正确的数据
+    correct = np.squeeze(correct_tensor.cpu().numpy())
+    num_correct += np.sum(correct)
+    
+print("Test loss: {:.3f}".format(np.mean(test_losses)))
+test_acc = num_correct/len(test_loader.dataset)
+print("Test accuracy: {:.3f}%".format(test_acc*100))
+
+
+def predict(sentence):
+    # 将句子分词后，转换为数字
+    sentences = [[word2idx[word.lower()] if word.lower() in word2idx else 0 for word in nltk.word_tokenize(sentence)]]
+    
+    # 将句子变为固定长度200
+    sentences = pad_input(sentences, 200)
+    
+    # 将数据移到GPU中
+    sentences = torch.Tensor(sentences).long().to(device)
+    
+    # 初始化隐状态
+    h = (torch.Tensor(2, 1, 512).zero_().to(device),
+         torch.Tensor(2, 1, 512).zero_().to(device))
+    h = tuple([each.data for each in h])
+    
+    # 预测
+    if model(sentences, h)[0] >= 0.5:
+        print("positive")
+    else:
+        print("negative")
+
+predict("The film is so boring")
+predict("The actor is too ugly.")
