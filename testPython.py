@@ -15,18 +15,19 @@ Created on Fri May 27 11:39:26 2022
 # model = BERTopic()
 # topics, probabilities = model.fit_transform(docs)
 import json
+from pandas import json_normalize
 import pandas as pd
 
 
 
 # x is a string of json format
 def func(x):
-    s = json.loads(x)
-    return s['id'] == 'cc'
-
+    #s = json.loads(x)
+    s = pd.json_normalize(eval(x))
+    return s['comment']
 def main():
     df = pd.read_excel("D:\ThesisSchoool\Data\SOF\MLOPS_SOF.xlsx", engine='openpyxl')
-    df['activity.question.postCell'].apply(lambda x: func(x))
+    #df[df['activity.question.postCell'].apply(lambda x: func(x))]
+    df[df['activity.question.postCell'].apply(lambda x: func(x))]
     return 0
-
 if __name__ == "__main__": main()
