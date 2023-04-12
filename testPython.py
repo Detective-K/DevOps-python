@@ -6,12 +6,11 @@ Created on Fri May 27 11:39:26 2022
 """
 
 
-# from bertopic import BERTopic
-#
-# from sklearn.datasets import fetch_20newsgroups
-#
+from bertopic import BERTopic
+
+from sklearn.datasets import fetch_20newsgroups
+
 # docs = fetch_20newsgroups(subset='all',  remove=('headers', 'footers', 'quotes'))['data']
-#
 # model = BERTopic()
 # topics, probabilities = model.fit_transform(docs)
 import json
@@ -38,10 +37,20 @@ def main():
     # DevOps_df['activity.question.postCell'] = DevOps_df['activity.question.postCell'].apply(lambda x: func(x))
 
     # pd.concat([MLOPS_df['activity.question.postCell'], DevOps_df['activity.question.postCell']])
+    #Data root
     SOFfiledir = "D:\\Thesis\\Data\\SOF\\"
     Quorafiledir = "D:\\Thesis\\Data\\Quora\\"
-    excels = [pd.read_excel(SOFfiledir+fname, engine='openpyxl') for fname in os.listdir(SOFfiledir) if 'xlsx' in fname]
-    SOFdf = pd.concat(excels)
+    #Get file data
+    SOFexcels = [pd.read_excel(SOFfiledir+fname, engine='openpyxl') for fname in os.listdir(SOFfiledir) if 'xlsx' in fname]
+    SOFdf = pd.concat(SOFexcels)
     SOFdf['activity.question.postCell'] = SOFdf['activity.question.postCell'].apply(lambda x: func(x))
+    Quoraexcels = [pd.read_excel(Quorafiledir + fname, engine='openpyxl') for fname in os.listdir(Quorafiledir) if 'xlsx' in fname]
+    Quoradf = pd.concat(Quoraexcels)
+    #Merge stackoverflow and Quora data delete nan row
+    Mergedf = pd.concat([SOFdf['activity.question.postCell'], Quoradf['Answer']]).dropna(axis=0, how="any")
+
+    model = BERTopic()
+    topics, probabilities = model.fit_transform(Mergedf)
+
     return 0
 if __name__ == "__main__": main()
