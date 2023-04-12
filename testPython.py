@@ -50,7 +50,7 @@ def main():
     Mergedf = pd.concat([SOFdf['activity.question.postCell'], Quoradf['Answer']]).dropna(axis=0, how="any")
 
     model = BERTopic()
-    topics, probabilities = model.fit_transform(Mergedf)
+    topics, probabilities = model.fit_transform(Mergedf.to_list())
 
     return 0
 if __name__ == "__main__": main()
