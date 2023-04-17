@@ -51,6 +51,13 @@ def main():
 
     model = BERTopic()
     topics, probabilities = model.fit_transform(Mergedf.to_list())
+    #
+    model.get_topic_info()
+    model.get_topic_freq().head()
+
+
+    #Visualize Topics (Add .show() for pycharm )
+    model.visualize_topics().show()
 
     return 0
 if __name__ == "__main__": main()
