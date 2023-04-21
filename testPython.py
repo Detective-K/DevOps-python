@@ -20,6 +20,7 @@ import pandas as pd
 
 
 
+
 # x is a string of json format
 def func(x):
     #s = json.loads(x)
@@ -49,6 +50,7 @@ def main():
     #Merge stackoverflow and Quora data delete nan row
     Mergedf = pd.concat([SOFdf['activity.question.postCell'], Quoradf['Answer']]).dropna(axis=0, how="any")
 
+    # model = BERTopic(calculate_probabilities=True)
     model = BERTopic()
     topics, probabilities = model.fit_transform(Mergedf.to_list())
     #
