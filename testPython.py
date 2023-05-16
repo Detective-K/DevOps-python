@@ -19,6 +19,14 @@ from pandas import json_normalize
 import pandas as pd
 
 
+# NLP import
+import re
+import nltk
+import nltk.corpus
+from nltk.stem import WordNetLemmatizer
+from nltk import word_tokenize
+from nltk.corpus import stopwords
+
 
 
 # x is a string of json format
@@ -27,6 +35,11 @@ def func(x):
     # s = pd.json_normalize(eval(x))
     # return s['comment'][0]
     return  ('' if pd.isna(x)  else pd.json_normalize(eval(x))['comment'][0])
+
+
+def getCleanText(serie: str) -> str:
+  return str(serie)
+
 
 def main():
     #取StackOverflow各項資料
