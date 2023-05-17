@@ -38,8 +38,18 @@ def func(x):
 
 
 def getCleanText(serie: str) -> str:
-  return str(serie)
+    stop_words = set(nltk.corpus.stopwords.words("english"))
+    lem = WordNetLemmatizer()
+    tokens = word_tokenize(str(serie))
+    tokens = [lem.lemmatize(t.lower()) for t in tokens if t not in stop_words and len(t) > 4]
+    cleaned = " ".join(tokens)
+    return cleaned
 
+def showTopics():
+  for topics in range(0, (len(model.get_topic_info()))):
+    print(f"\nTopic: {topics + 1}\n")
+    for t in model.get_topic(topics):
+      print("\t", t[0])
 
 def main():
     #取StackOverflow各項資料
