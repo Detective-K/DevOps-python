@@ -41,7 +41,8 @@ def getCleanText(serie: str) -> str:
     stop_words = set(nltk.corpus.stopwords.words("english"))
     lem = WordNetLemmatizer()
     tokens = word_tokenize(str(serie))
-    tokens = [lem.lemmatize(t.lower()) for t in tokens if t not in stop_words and len(t) > 4]
+    # tokens = [lem.lemmatize(t.lower()) for t in tokens if t not in stop_words and len(t) > 4]
+    tokens = [lem.lemmatize(t.lower()) for t in tokens if t not in stop_words]
     cleaned = " ".join(tokens)
     return cleaned
 
@@ -62,8 +63,10 @@ def main():
 
     # pd.concat([MLOPS_df['activity.question.postCell'], DevOps_df['activity.question.postCell']])
     #Data root
-    SOFfiledir = "D:\\Thesis\\Data\\SOF\\"
-    Quorafiledir = "D:\\Thesis\\Data\\Quora\\"
+    # SOFfiledir = "D:\\Thesis\\Data\\SOF\\"
+    # Quorafiledir = "D:\\Thesis\\Data\\Quora\\"
+    SOFfiledir = "/Users/kko/Desktop/github/Thesis/Data/SOF/"
+    Quorafiledir = "/Users/kko/Desktop/github/Thesis/Data/Quora/"
     #Get file data
     SOFexcels = [pd.read_excel(SOFfiledir+fname, engine='openpyxl') for fname in os.listdir(SOFfiledir) if 'xlsx' in fname]
     SOFdf = pd.concat(SOFexcels)
@@ -73,6 +76,8 @@ def main():
     #Merge stackoverflow and Quora data delete nan row
     Mergedf = pd.concat([SOFdf['activity.question.postCell'], Quoradf['Answer']]).dropna(axis=0, how="any")
 
+    # Data Preprocessing
+    cc = Mergedf.apply(getCleanText)
     # model = BERTopic(calculate_probabilities=True)
     model = BERTopic()
     topics, probabilities = model.fit_transform(Mergedf.to_list())
