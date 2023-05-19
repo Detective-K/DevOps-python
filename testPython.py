@@ -119,10 +119,12 @@ def main():
     Quoraexcels = [pd.read_excel(Quorafiledir + fname, engine='openpyxl') for fname in os.listdir(Quorafiledir) if 'xlsx' in fname]
     Quoradf = pd.concat(Quoraexcels)
     #Merge stackoverflow and Quora data delete nan row
-    Mergedf = pd.concat([SOFdf['activity.question.postCell'], Quoradf['Answer']]).dropna(axis=0, how="any")
+    Mergedf = {"MergeData":[] , "processed_text" : []}
+    Mergedf = pd.DataFrame(Mergedf)
+    Mergedf["MergeData"] = pd.concat([SOFdf['activity.question.postCell'], Quoradf['Answer']]).dropna(axis=0, how="any")
 
     # Data Preprocessing
-    cc = Mergedf.apply(getCleanText2)
+    Mergedf["processed_text"] = Mergedf["MergeData"].apply(getCleanText2)
 
     # model = BERTopic(calculate_probabilities=True)
     model = BERTopic()
@@ -143,10 +145,14 @@ def main():
     ]
 
     # 创建一个TF-IDF向量化器
-    vectorizer = TfidfVectorizer()
+    # vectorizer = TfidfVectorizer()
+    vectorizer = TfidfVectorizer(
+        min_df=3,
+        max_df=0.85
+    )
 
     # 将文本数据转换为TF-IDF特征矩阵
-    tfidf_matrix = vectorizer.fit_transform(Mergedf.to_list())
+    tfidf_matrix = vectorizer.fit_transform(Mergedf["processed_text"].to_list())
 
     # 定义NMF模型并拟合数据
     num_topics = 2  # 假设我们希望得到2个主题
