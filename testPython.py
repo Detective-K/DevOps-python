@@ -32,11 +32,24 @@ from nltk.corpus import stopwords
 from sklearn.decomposition import NMF
 from sklearn.feature_extraction.text import TfidfVectorizer
 
+# NLP for NMF
+from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
+import string
+from nltk.stem.snowball import SnowballStemmer
+from nltk.tokenize import TweetTokenizer, RegexpTokenizer
+import numpy as np
+from sklearn.decomposition import NMF
+from sklearn.feature_extraction.text import TfidfVectorizer
+from gensim.models.coherencemodel import CoherenceModel
+from gensim.corpora.dictionary import Dictionary
+from gensim.models.nmf import Nmf
+from collections import Counter
+from operator import itemgetter
 
 
 
 # x is a string of json format
-def func(x):
+def cleanJson(x):
     #s = json.loads(x)
     # s = pd.json_normalize(eval(x))
     # return s['comment'][0]
@@ -97,6 +110,164 @@ def getCleanText2(serie: str) -> str:
     # return named_entities
 
 
+c_dict = {
+    "ain't": "am not",
+    "aren't": "are not",
+    "can't": "cannot",
+    "can't've": "cannot have",
+    "'cause": "because",
+    "could've": "could have",
+    "couldn't": "could not",
+    "couldn't've": "could not have",
+    "didn't": "did not",
+    "doesn't": "does not",
+    "don't": "do not",
+    "hadn't": "had not",
+    "hadn't've": "had not have",
+    "hasn't": "has not",
+    "haven't": "have not",
+    "he'd": "he would",
+    "he'd've": "he would have",
+    "he'll": "he will",
+    "he'll've": "he will have",
+    "he's": "he is",
+    "how'd": "how did",
+    "how'd'y": "how do you",
+    "how'll": "how will",
+    "how's": "how is",
+    "i'd": "I would",
+    "i'd've": "I would have",
+    "i'll": "I will",
+    "i'll've": "I will have",
+    "i'm": "I am",
+    "i've": "I have",
+    "isn't": "is not",
+    "it'd": "it had",
+    "it'd've": "it would have",
+    "it'll": "it will",
+    "it'll've": "it will have",
+    "it's": "it is",
+    "let's": "let us",
+    "ma'am": "madam",
+    "mayn't": "may not",
+    "might've": "might have",
+    "mightn't": "might not",
+    "mightn't've": "might not have",
+    "must've": "must have",
+    "mustn't": "must not",
+    "mustn't've": "must not have",
+    "needn't": "need not",
+    "needn't've": "need not have",
+    "o'clock": "of the clock",
+    "oughtn't": "ought not",
+    "oughtn't've": "ought not have",
+    "shan't": "shall not",
+    "sha'n't": "shall not",
+    "shan't've": "shall not have",
+    "she'd": "she would",
+    "she'd've": "she would have",
+    "she'll": "she will",
+    "she'll've": "she will have",
+    "she's": "she is",
+    "should've": "should have",
+    "shouldn't": "should not",
+    "shouldn't've": "should not have",
+    "so've": "so have",
+    "so's": "so is",
+    "that'd": "that would",
+    "that'd've": "that would have",
+    "that's": "that is",
+    "there'd": "there had",
+    "there'd've": "there would have",
+    "there's": "there is",
+    "they'd": "they would",
+    "they'd've": "they would have",
+    "they'll": "they will",
+    "they'll've": "they will have",
+    "they're": "they are",
+    "they've": "they have",
+    "to've": "to have",
+    "wasn't": "was not",
+    "we'd": "we had",
+    "we'd've": "we would have",
+    "we'll": "we will",
+    "we'll've": "we will have",
+    "we're": "we are",
+    "we've": "we have",
+    "weren't": "were not",
+    "what'll": "what will",
+    "what'll've": "what will have",
+    "what're": "what are",
+    "what's": "what is",
+    "what've": "what have",
+    "when's": "when is",
+    "when've": "when have",
+    "where'd": "where did",
+    "where's": "where is",
+    "where've": "where have",
+    "who'll": "who will",
+    "who'll've": "who will have",
+    "who's": "who is",
+    "who've": "who have",
+    "why's": "why is",
+    "why've": "why have",
+    "will've": "will have",
+    "won't": "will not",
+    "won't've": "will not have",
+    "would've": "would have",
+    "wouldn't": "would not",
+    "wouldn't've": "would not have",
+    "y'all": "you all",
+    "y'alls": "you alls",
+    "y'all'd": "you all would",
+    "y'all'd've": "you all would have",
+    "y'all're": "you all are",
+    "y'all've": "you all have",
+    "you'd": "you had",
+    "you'd've": "you would have",
+    "you'll": "you you will",
+    "you'll've": "you you will have",
+    "you're": "you are",
+    "you've": "you have"
+}
+
+# Compiling the contraction dict
+c_re = re.compile('(%s)' % '|'.join(c_dict.keys()))
+
+# List of stop words
+add_stop = ['said', 'say', '...', 'like', 'cnn', 'ad']
+stop_words = ENGLISH_STOP_WORDS.union(add_stop)
+
+# List of punctuation
+punc = list(set(string.punctuation))
+
+
+# Splits words on white spaces (leaves contractions intact) and splits out
+# trailing punctuation
+def casual_tokenizer(text):
+    tokenizer = TweetTokenizer()
+    tokens = tokenizer.tokenize(text)
+    return tokens
+
+
+def expandContractions(text, c_re=c_re):
+    def replace(match):
+        return c_dict[match.group(0)]
+    return c_re.sub(replace, text)
+
+
+def process_text(text):
+    text = casual_tokenizer(text)
+    text = [each.lower() for each in text]
+    text = [re.sub('[0-9]+', '', each) for each in text]
+    text = [expandContractions(each, c_re=c_re) for each in text]
+    text = [SnowballStemmer('english').stem(each) for each in text]
+    text = [w for w in text if w not in punc]
+    text = [w for w in text if w not in stop_words]
+    text = [each for each in text if len(each) > 1]
+    text = [each for each in text if ' ' not in each]
+    return text
+
 def main():
     #取StackOverflow各項資料
     # MLOPS_df = pd.read_excel("D:\Thesis\Data\SOF\MLOPS_SOF.xlsx", engine='openpyxl')
@@ -108,14 +279,14 @@ def main():
 
     # pd.concat([MLOPS_df['activity.question.postCell'], DevOps_df['activity.question.postCell']])
     #Data root
-    SOFfiledir = "D:\\Thesis\\Data\\SOF\\"
-    Quorafiledir = "D:\\Thesis\\Data\\Quora\\"
-    # SOFfiledir = "/Users/kko/Desktop/github/Thesis/Data/SOF/"
-    # Quorafiledir = "/Users/kko/Desktop/github/Thesis/Data/Quora/"
+    # SOFfiledir = "D:\\Thesis\\Data\\SOF\\"
+    # Quorafiledir = "D:\\Thesis\\Data\\Quora\\"
+    SOFfiledir = "/Users/kko/Desktop/github/Thesis/Data/SOF/"
+    Quorafiledir = "/Users/kko/Desktop/github/Thesis/Data/Quora/"
     #Get file data
     SOFexcels = [pd.read_excel(SOFfiledir+fname, engine='openpyxl') for fname in os.listdir(SOFfiledir) if 'xlsx' in fname]
     SOFdf = pd.concat(SOFexcels)
-    SOFdf['activity.question.postCell'] = SOFdf['activity.question.postCell'].apply(lambda x: func(x))
+    SOFdf['activity.question.postCell'] = SOFdf['activity.question.postCell'].apply(lambda x: cleanJson(x))
     Quoraexcels = [pd.read_excel(Quorafiledir + fname, engine='openpyxl') for fname in os.listdir(Quorafiledir) if 'xlsx' in fname]
     Quoradf = pd.concat(Quoraexcels)
     #Merge stackoverflow and Quora data delete nan row
@@ -124,61 +295,60 @@ def main():
     Mergedf["MergeData"] = pd.concat([SOFdf['activity.question.postCell'], Quoradf['Answer']]).dropna(axis=0, how="any")
 
     # Data Preprocessing
-    Mergedf["processed_text"] = Mergedf["MergeData"].apply(getCleanText2)
+    Mergedf["processed_text"] = Mergedf["MergeData"].apply(process_text)
 
-    # model = BERTopic(calculate_probabilities=True)
+    # # model = BERTopic(calculate_probabilities=True)
     model = BERTopic()
-    topics, probabilities = model.fit_transform(Mergedf.to_list())
-    #
+    topics, probabilities = model.fit_transform(Mergedf["MergeData"].to_list())
+
+    bertopic0 = pd.DataFrame(model.get_topic(0))
     model.get_topic_info()
-    model.get_topic_freq().head()
+    # model.get_topic_freq().head()
+    #
+    #
+    # #Visualize Topics (Add .show() for pycharm )
+    # model.visualize_topics().show()
 
-
-    #Visualize Topics (Add .show() for pycharm )
-    model.visualize_topics().show()
-
-    # 假设我们有一些文本数据存储在一个列表中
-    documents = [
-        "这是一篇关于机器学习的文章",
-        "主题模型可以帮助我们发现文本数据中的隐藏主题",
-        "机器学习是人工智能领域的重要技术之一"
-    ]
-
-    # 创建一个TF-IDF向量化器
-    # vectorizer = TfidfVectorizer()
-    vectorizer = TfidfVectorizer(
+    # NMF Topic Modeling
+    texts = Mergedf['processed_text']
+    # TF-IDF
+    tfidf_vectorizer = TfidfVectorizer(
         min_df=3,
-        max_df=0.85
+        max_df=0.85,
+        max_features=50,
+        ngram_range=(1, 2),
+        preprocessor=' '.join
     )
 
-    # 将文本数据转换为TF-IDF特征矩阵
-    tfidf_matrix = vectorizer.fit_transform(Mergedf["processed_text"].to_list())
+    tfidf = tfidf_vectorizer.fit_transform(texts)
 
-    # 定义NMF模型并拟合数据
-    num_topics = 2  # 假设我们希望得到2个主题
-    nmf_model = NMF(n_components=num_topics)
-    nmf_model.fit(tfidf_matrix)
+    nmf = NMF(
+        n_components=20,
+        init='nndsvd'
+    ).fit(tfidf)
 
-    # 获取主题词和文档-主题矩阵
-    feature_names = vectorizer.get_feature_names_out()
-    topic_words = nmf_model.components_
-    document_topic_matrix = nmf_model.transform(tfidf_matrix)
+    # Get feature
+    feature_names = tfidf_vectorizer.get_feature_names_out()
+    topic_words = nmf.components_
+    document_topic_matrix = nmf.transform(tfidf)
 
-    # 打印每个主题的关键词
+    # print topic
     for topic_idx, topic in enumerate(topic_words):
-        top_features = topic.argsort()[:-6:-1]  # 获取每个主题中的前5个关键词
+        top_features = topic.argsort()[:-6:-1]
         print(f"Topic #{topic_idx + 1}:")
         for feature_index in top_features:
             print(feature_names[feature_index])
         print()
 
-    # 打印每个文档的主题分布
-    for doc_idx, doc in enumerate(documents):
+    # topic 分部率
+    for doc_idx, doc in enumerate(Mergedf["processed_text"]):
         topic_probabilities = document_topic_matrix[doc_idx]
         print(f"Document #{doc_idx + 1}:")
         for topic_idx, prob in enumerate(topic_probabilities):
             print(f"Topic #{topic_idx + 1}: {prob:.2f}")
         print()
+
+
 
     return 0
 if __name__ == "__main__": main()
