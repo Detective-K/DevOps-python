@@ -298,6 +298,8 @@ def main():
     Mergedf["processed_text"] = Mergedf["MergeData"].apply(process_text)
 
     # # model = BERTopic(calculate_probabilities=True)
+    #set words range
+    #model = BERTopic(n_gram_range=(1, 6))
     model = BERTopic()
     topics, probabilities = model.fit_transform(Mergedf["MergeData"].to_list())
 
