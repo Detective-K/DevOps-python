@@ -40,6 +40,8 @@ from nltk.tokenize import TweetTokenizer, RegexpTokenizer
 import numpy as np
 from sklearn.decomposition import NMF
 from sklearn.feature_extraction.text import TfidfVectorizer
+# stopwords
+from sklearn.feature_extraction.text import CountVectorizer
 from gensim.models.coherencemodel import CoherenceModel
 from gensim.corpora.dictionary import Dictionary
 from gensim.models.nmf import Nmf
@@ -302,6 +304,8 @@ def main():
     #model = BERTopic(n_gram_range=(1, 6))
     model = BERTopic()
     topics, probabilities = model.fit_transform(Mergedf["MergeData"].to_list())
+    cv = CountVectorizer(ngram_range=(1, 3), stop_words="english")
+    model.update_topics(Mergedf["MergeData"].to_list(), topics, vectorizer_model=cv)
 
     bertopic0 = pd.DataFrame(model.get_topic(0))
     model.get_topic_info()
